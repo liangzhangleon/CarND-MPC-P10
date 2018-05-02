@@ -9,16 +9,16 @@ using namespace std;
 using CppAD::AD;
 
 class MPC {
- typedef CPPAD_TESTVECTOR(double) Dvector;
+ public:
+  typedef CPPAD_TESTVECTOR(double) Dvector;
  private:
   void InitVars(const Eigen::VectorXd &state, Dvector &vars);
 
-  void SetVarsBound(Dvector &vars_lowerbound, Dvector &var_upperbound);
+  void SetVarsBound(Dvector &vars_lowerbound, Dvector &vars_upperbound);
 
   void SetConstraintsBound(const Eigen::VectorXd &state, Dvector &constraints_lowerbound, Dvector &constraints_upperbound);
  public:
   MPC();
-
   virtual ~MPC();
 
   // Solve the model given an initial state and polynomial coefficients.
