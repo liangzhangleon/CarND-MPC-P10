@@ -6,6 +6,15 @@ Self-Driving Car Engineer Nanodegree Program
 ## The Model
 Student describes their model in detail. This includes the state, actuators and update equations.
 
+$$latex 
+x_{t+1} = x_t + v_t * cos (\psi_t) * dt
+$$
+
+## Polynomial Fitting and MPC Preprocessing
+The waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
+
+The steer value is divided by deg2rad(25) to scale down in between [-1, 1].
+
 ## Timestep Length and Elapsed Duration (N & dt)
 Student discusses the reasoning behind the chosen N (timestep length) and dt (elapsed duration between timesteps) values. Additionally the student details the previous values tried.
 
@@ -14,10 +23,8 @@ The values I tried
 #| N | dt
 ---:|:---:|:---
 
-## Polynomial Fitting and MPC Preprocessing
-The waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
+## Tune the cost function
 
-The steer value is divided by deg2rad(25) to scale down in between [-1, 1].
 
 ## Model Predictive Control with Latency
 The student implements Model Predictive Control that handles a 100 millisecond latency. Student provides details on how they deal with latency.
