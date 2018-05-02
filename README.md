@@ -1,17 +1,27 @@
 # CarND-Controls-MPC
 **Liang Zhang**
+
 Self-Driving Car Engineer Nanodegree Program
 
 ---
-## The Model
-Student describes their model in detail. This includes the state, actuators and update equations.
+## The Model: state, actuators and update equations
 
-$$latex 
-x_{t+1} = x_t + v_t * cos (\psi_t) * dt
-$$
+I used a kinematic (bicycle) model for this project, which ignores tire forces, gravity and mass. This model has four states: `x`, `y`, `psi` and `v`, where `x` and `y` denote car position in 2D coordinates, `psi` denotes heading direction and `v` is velocity. The two actuators are steering wheel `delta` and throttle `a` (an unified actuator for throttle pedal and break pedal). The detailed update equation from `t` to `t+1` is the following. Note `Lf` is the distance between the center of mass of the vehicle and the front wheels.
+
+```
+      x_[t+1] = x[t] + v[t] * cos(psi[t]) * dt
+      y_[t+1] = y[t] + v[t] * sin(psi[t]) * dt
+      psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt
+      v_[t+1] = v[t] + a[t] * dt
+```
+In addition, I used two errors as states based on the kinematic model. These two errors are cross-track error `cte` and orientation error `epsi`. The two new update equations are in the following.   
+```
+      cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+      epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
+```
 
 ## Polynomial Fitting and MPC Preprocessing
-The waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
+The waypoints is first transformed from map coordinates to vehicle coordinates for displaying and calculating CTE and orientation erroras. Then, the waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
 
 The steer value is divided by deg2rad(25) to scale down in between [-1, 1].
 
@@ -27,9 +37,8 @@ The values I tried
 
 
 ## Model Predictive Control with Latency
-The student implements Model Predictive Control that handles a 100 millisecond latency. Student provides details on how they deal with latency.
+I use the vehicle model to compute the 'latency state' starting from the current state for the duration of the latency. Then the 'latency state' is used as the input state for MPC.
 
-???
 ## Dependencies
 
 * cmake >= 3.5
