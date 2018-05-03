@@ -16,28 +16,59 @@ I used a kinematic (bicycle) model for this project, which ignores tire forces, 
 ```
 In addition, I used two errors as states based on the kinematic model. These two errors are cross-track error `cte` and orientation error `epsi`. The two new update equations are in the following.   
 ```
-      cte[t+1] = f(x[t]) - y[t] + v[t] * sin(epsi[t]) * dt
+      cte[t+1] = y[t] - f(x[t]) + v[t] * sin(epsi[t]) * dt
       epsi[t+1] = psi[t] - psides[t] + v[t] * delta[t] / Lf * dt
 ```
 
 ## Polynomial Fitting and MPC Preprocessing
-The waypoints is first transformed from map coordinates to vehicle coordinates for displaying and calculating CTE and orientation erroras. Then, the waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
+The waypoints is first transformed from map coordinates to vehicle coordinates (line 97-102 in main.cpp) for displaying and calculating CTE and orientation errors. Then, the waypoints is fitted by a third order polynomial using polyfit function in main.cpp.
 
-The steer value is divided by deg2rad(25) to scale down in between [-1, 1].
+The steer value is divided by deg2rad(25) to scale down in between [-1, 1]. Note that the simulater uses an opposite sign for tuning left and tuning right compared to the kinematic model. Hence, the steer value will multiply -1 in the update equations.
 
 ## Timestep Length and Elapsed Duration (N & dt)
-Student discusses the reasoning behind the chosen N (timestep length) and dt (elapsed duration between timesteps) values. Additionally the student details the previous values tried.
-
-The values I tried
+The timestep length and elapsed duration I tried are in the following table.
 
 #| N | dt
 ---:|:---:|:---
+1   | 20 | 0.05
+2   | 10 | 0.1
+3   | 8  | 0.125
+4   | 5  | 0.2
+
+Firstly, I chose 10 seconds as the duration for prediction. I found it is reasonable for speed from 40 mph to 70 mph. For timestep size dt, I used 0.05, 0.1, 0.125 and 0.2. With a small dt, the accuracy of the predicted trajectory could be very high. But I found for a optimization problem, a high resolution could lead to amplification of modelling error and measurement error. Hence, I take N = 5 and dt = 0.2 for reference speed = 70 mph. I found in this case, a large dt leads to a much more stable (robust) solution. 
 
 ## Tune the cost function
 
+In MPC.cpp line 45 - 59, I use the following cost function. 
+```
+    for (size_t t = 0; t < N; t++) {
+      fg[0] += 10 * CppAD::pow(vars[cte_start + t], 2);
+      fg[0] += 10 * CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += CppAD::pow(vars[v_start + t] - ref_v, 2);
+    }
+    // Minimize the use of actuators.
+    for (size_t t= 0; t < N - 1; t++) {
+      fg[0] += 300 * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += CppAD::pow(vars[a_start + t], 2);
+    }
+    // Minimize the value gap between sequential actuations.
+    for (size_t t= 0; t < N - 2; t++) {
+      fg[0] += 5000 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += CppAD::pow(vars[a_start + t + 1] - vars[a_start + t], 2);
+    }
+```
+I found that the weight for cross track error and orientation error should not be too large. Because the system is too sensitive in this case. A large weight for the gap between sequential steering is needed to smooth the steering actuator. 
 
 ## Model Predictive Control with Latency
-I use the vehicle model to compute the 'latency state' starting from the current state for the duration of the latency. Then the 'latency state' is used as the input state for MPC.
+I use the vehicle model to compute the 'latency state' starting from the current state for the duration of the latency. Then the 'latency state' is used as the input state for MPC. See the detailed update equations in the following (line 120-135 in main.cpp).
+```
+        double pred_px = 0.0 + v *  dt; 
+        const double pred_py = 0.0; 
+        double pred_psi = 0.0 - v *  delta / Lf * dt;
+        double pred_v = v + a * dt;
+        double pred_cte = cte + v * sin(epsi) * dt;
+        double pred_epsi = epsi- v * delta / Lf * dt;
+```
 
 ## Dependencies
 
